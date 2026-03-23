@@ -9,7 +9,7 @@ import 'package:spend_wise/features/expense_tracking/domain/repo/expense_repo.da
 class ExpenseRepoImp extends ExpenseRepo {
   final ExpenseLocalDatasource localDatasource;
 
-  ExpenseRepoImp({required this.localDatasource});
+  ExpenseRepoImp(this.localDatasource);
   @override
   Future<Either<Failure, void>> deleteExpense(String id) async {
     try {

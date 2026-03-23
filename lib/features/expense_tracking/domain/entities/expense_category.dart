@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:hive/hive.dart';
 part 'expense_category.g.dart';
 
@@ -36,6 +37,25 @@ extension ExpenseCategoryExtension on ExpenseCategory {
         return '🏥 Health';
       case ExpenseCategory.other:
         return '📦 Other';
+    }
+  }
+
+  String get displayIcon {
+    switch (this) {
+      case ExpenseCategory.food:
+        return '🍔';
+      case ExpenseCategory.transport:
+        return '🚗';
+      case ExpenseCategory.shopping:
+        return '🛍️';
+      case ExpenseCategory.bills:
+        return '🏠';
+      case ExpenseCategory.entertainment:
+        return '🍿';
+      case ExpenseCategory.health:
+        return '🏥';
+      case ExpenseCategory.other:
+        return '📦';
     }
   }
 }

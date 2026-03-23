@@ -11,7 +11,7 @@ abstract class ExpenseLocalDatasource {
 class ExpenseLocalDatasourceImp extends ExpenseLocalDatasource {
   final Box<ExpenseModel> box;
 
-  ExpenseLocalDatasourceImp({required this.box});
+  ExpenseLocalDatasourceImp(this.box);
 
   @override
   Future<void> cacheExpense(ExpenseModel expense) async {

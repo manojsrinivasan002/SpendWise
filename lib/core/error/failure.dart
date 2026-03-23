@@ -6,3 +6,7 @@ abstract class Failure {
 class CacheFailure extends Failure {
   const CacheFailure(super.message);
 }
+
+class InputFailure extends Failure {
+  const InputFailure(super.message);
+}
