@@ -208,6 +208,11 @@ flutter run
 Generate Hive adapters:
 flutter pub run build_runner build
 
+Try the App
+https://github.com/manojsrinivasan002/SpendWise/releases/download/v1.0/spend-wiser-v1.apk
+
+Demo Video
+https://drive.google.com/file/d/1zQxvaZozuQW4epUA08kcbqTlpdOUxFbo/view?usp=sharing
 
 Future Improvements
 
