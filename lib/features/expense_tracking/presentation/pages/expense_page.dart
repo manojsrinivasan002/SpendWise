@@ -6,7 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:spend_wise/features/expense_tracking/domain/entities/expense_category.dart';
 import 'package:spend_wise/features/expense_tracking/presentation/cubit/expense_cubit.dart';
 import 'package:spend_wise/features/expense_tracking/presentation/cubit/expense_state.dart';
+import 'package:spend_wise/features/expense_tracking/presentation/widgets/expense_tile.dart';
+import 'package:spend_wise/features/expense_tracking/presentation/widgets/my_sliver_app_bar.dart';
 import 'package:spend_wise/features/expense_tracking/presentation/widgets/sticky_date_header_delegate.dart';
+import 'package:spend_wise/features/settings/presentation/cubit/settings_cubit.dart';
+import 'package:spend_wise/features/settings/presentation/pages/settings_page.dart';
 
 class ExpensePage extends StatefulWidget {
   const ExpensePage({super.key});
@@ -24,7 +28,8 @@ class _ExpensePageState extends State<ExpensePage> {
   Timer? _hintTimer;
   final currencyFormat = NumberFormat('#,##0');
 
-  final List<String> _dynamicHints = [
+  // RULE 1: Hardcoded lists should be const
+  final List<String> _dynamicHints = const [
     "150 for coffee",
     "500 for taxi",
     "1200 for groceries",
@@ -81,89 +86,6 @@ class _ExpensePageState extends State<ExpensePage> {
     _inputFocusNode.unfocus();
   }
 
-  void _showAnomalyDetails(List<String> insights) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true, // Allows the sheet to size itself properly
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        final color = Theme.of(context).colorScheme;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.warning_rounded, color: Colors.red, size: 28),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      "Spending Anomaly Detected",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                // 🚨 Map through our dynamic list of insights!
-                ...insights.map(
-                  (insight) => Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          insight.contains("💡")
-                              ? Icons.lightbulb_outline
-                              : Icons.analytics_outlined,
-                          color: color.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(insight, style: const TextStyle(fontSize: 15, height: 1.4)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("I Understand"),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
@@ -202,6 +124,7 @@ class _ExpensePageState extends State<ExpensePage> {
                   },
                   builder: (context, state) {
                     if (state is ExpenseLoading) {
+                      // RULE 2: Everything inside here is static, so the whole Center is const
                       return const Center(
                         child: SizedBox(
                           height: 25,
@@ -212,271 +135,108 @@ class _ExpensePageState extends State<ExpensePage> {
                     }
                     if (state is ExpenseLoaded) {
                       final groupedExpenses = state.groupedExpenses;
-                      final double monthlyBudget = 30000;
+                      final settingsState = context.watch<SettingsCubit>().state;
+                      final double monthlyBudget = settingsState.monthlyBudgetLimit;
                       final int healthScore = state.getHealthScore(monthlyBudget);
                       final totalSpent = state.totalSpentThisMonth;
                       final remaining = state.getRemainingBudget(monthlyBudget);
                       final dailyLimit = state.getDailySafeLimit(monthlyBudget);
                       final daysLeft = state.daysLeftInMonth;
+                      final sortedCategories = state.sortedCatPercentages;
 
                       return CustomScrollView(
-                        physics: BouncingScrollPhysics(),
+                        physics: const BouncingScrollPhysics(),
                         slivers: [
                           // DASHBOARD
-                          SliverAppBar(
-                            expandedHeight: 330,
-                            collapsedHeight: 60,
-                            pinned: true,
-                            stretch: true,
-                            backgroundColor: color.surface,
-                            scrolledUnderElevation: 0,
-                            onStretchTrigger: () async {
+                          MySliverAppBar(
+                            moveToSettings: () {
                               HapticFeedback.heavyImpact();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SettingsPage()),
+                              );
                             },
-                            title: Text("Spend Wiser", style: text.titleMedium),
-                            centerTitle: true,
-                            actions: [
-                              IconButton(
-                                onPressed: () {
-                                  //TODO: NEED TO WORK ON SETTINGS BUTTON..
-                                },
-                                icon: Icon(Icons.settings_outlined),
-                              ),
-                            ],
-                            flexibleSpace: FlexibleSpaceBar(
-                              background: Padding(
-                                padding: EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 16),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: color.secondary,
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Time machine and health score
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          InkWell(
-                                            onTap: state.canGoBack
-                                                ? () => context.read<ExpenseCubit>().previousMonth()
-                                                : null,
-                                            borderRadius: BorderRadius.circular(20),
-                                            child: Padding(
-                                              padding: EdgeInsets.all(4.0),
-                                              child: Icon(
-                                                Icons.chevron_left,
-                                                size: 24,
-                                                color: state.canGoBack
-                                                    ? color.onSecondary
-                                                    : color.inversePrimary,
-                                              ),
-                                            ),
+                            goBack: () {
+                              HapticFeedback.heavyImpact();
+                              state.canGoBack;
+                            },
+                            goForward: () {
+                              HapticFeedback.heavyImpact();
+                              state.canGoForward;
+                            },
+                            formattedCurrentMonth: state.formattedCurrentMonth,
+                            userCurrency: _userCurrency,
+                            healthScore: healthScore,
+                            daysLeft: daysLeft,
+                            goBackColor: state.canGoBack ? color.onSecondary : color.inversePrimary,
+                            goForwardColor: state.canGoForward
+                                ? color.onSecondary
+                                : color.inversePrimary,
+                            totalSpent: totalSpent,
+                            monthlyBudget: monthlyBudget,
+                            remaining: remaining,
+                            dailyLimit: dailyLimit,
+                            currencyFormat: currencyFormat,
+                          ),
+
+                          // SORTED CATEGORIES
+                          if (sortedCategories.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 16, bottom: 8),
+                                child: SizedBox(
+                                  height: 80,
+                                  child: ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    physics: const BouncingScrollPhysics(),
+                                    itemBuilder: (context, index) {
+                                      final categoryIcon = sortedCategories[index].key;
+                                      final percentage = sortedCategories[index].value;
+                                      return Container(
+                                        width: 80,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(18),
+                                          color: color.secondary,
+                                          border: Border.all(
+                                            color: color.outlineVariant.withValues(alpha: 0.1),
+                                            style: BorderStyle.solid,
                                           ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            state.formattedCurrentMonth,
-                                            style: text.titleMedium?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          InkWell(
-                                            onTap: state.canGoForward
-                                                ? () => context.read<ExpenseCubit>().nextMonth()
-                                                : null,
-                                            borderRadius: BorderRadius.circular(20),
-                                            child: Padding(
-                                              padding: EdgeInsets.all(4.0),
-                                              child: Icon(
-                                                Icons.chevron_right,
-                                                size: 24,
-                                                color: state.canGoForward
-                                                    ? color.onSecondary
-                                                    : color.inversePrimary,
-                                              ),
-                                            ),
-                                          ),
-                                          Spacer(),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: healthScore >= 50
-                                                  ? Colors.green.withValues(alpha: 0.1)
-                                                  : Colors.red.withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(
-                                                color: healthScore >= 50
-                                                    ? Colors.green.withValues(alpha: 0.5)
-                                                    : Colors.red.withValues(alpha: 0.5),
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.health_and_safety_rounded,
-                                                  color: healthScore >= 50
-                                                      ? Colors.green
-                                                      : Colors.red,
-                                                  size: 14,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  healthScore.toString(),
-                                                  style: TextStyle(
-                                                    color: healthScore >= 50
-                                                        ? Colors.green
-                                                        : Colors.red,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 24),
-                                      // Total spent
-                                      Text(
-                                        "Total Spent this month",
-                                        style: text.titleSmall?.copyWith(
-                                          color: color.inversePrimary,
                                         ),
-                                      ),
-
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                                        textBaseline: TextBaseline.alphabetic,
-                                        children: [
-                                          TweenAnimationBuilder(
-                                            tween: Tween(begin: 0, end: totalSpent),
-                                            duration: Duration(milliseconds: 1000),
-                                            curve: Curves.easeOutCubic,
-                                            builder: (context, value, child) => Text(
-                                              "$_userCurrency${currencyFormat.format(value)}",
-                                              style: text.headlineLarge?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: -1,
-                                                color: color.primary,
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(categoryIcon),
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                                              child: Divider(
+                                                height: 12,
+                                                indent: 10,
+                                                endIndent: 10,
+                                                color: color.outlineVariant.withValues(alpha: 0.1),
                                               ),
                                             ),
-                                          ),
-                                          SizedBox(width: 8),
-                                          TweenAnimationBuilder(
-                                            tween: Tween(begin: 0, end: monthlyBudget),
-                                            duration: Duration(milliseconds: 1000),
-                                            curve: Curves.easeOutCubic,
-                                            builder: (context, value, child) => Text(
-                                              "/ $_userCurrency${currencyFormat.format(monthlyBudget)}",
-                                              style: text.titleMedium,
+                                            TweenAnimationBuilder<double>(
+                                              tween: Tween<double>(begin: 0, end: percentage),
+                                              duration: const Duration(milliseconds: 1000),
+                                              builder: (context, value, child) => Text(
+                                                "${value.toStringAsFixed(0)}%",
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: color.onSurface,
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 16),
-                                      // Remaining, days left, daily limit
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          // remaining
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                "Remaining",
-                                                style: text.labelMedium?.copyWith(
-                                                  color: color.inversePrimary,
-                                                ),
-                                              ),
-                                              TweenAnimationBuilder<double>(
-                                                tween: Tween<double>(begin: 0, end: remaining),
-                                                duration: const Duration(milliseconds: 1000),
-                                                builder: (context, value, child) => Text(
-                                                  "$_userCurrency${currencyFormat.format(value)}",
-                                                  style: text.titleMedium?.copyWith(
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Container(
-                                            width: 1,
-                                            height: 30,
-                                            color: color.outlineVariant.withValues(alpha: 0.2),
-                                          ),
-
-                                          // days left
-                                          Column(
-                                            children: [
-                                              Text(
-                                                "Days Left",
-                                                style: text.labelMedium?.copyWith(
-                                                  color: color.inversePrimary,
-                                                ),
-                                              ),
-                                              TweenAnimationBuilder<double>(
-                                                tween: Tween<double>(
-                                                  begin: 0,
-                                                  end: daysLeft.toDouble(),
-                                                ),
-                                                duration: Duration(milliseconds: 1000),
-
-                                                builder: (context, value, child) {
-                                                  return Text(
-                                                    value.toInt().toString(),
-                                                    style: text.titleMedium?.copyWith(
-                                                      fontWeight: FontWeight.bold,
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                          Container(
-                                            width: 1,
-                                            height: 30,
-                                            color: color.outlineVariant.withValues(alpha: 0.2),
-                                          ),
-
-                                          // daily limit
-                                          Column(
-                                            children: [
-                                              Text(
-                                                "Daily Limit",
-                                                style: text.labelMedium?.copyWith(
-                                                  color: color.inversePrimary,
-                                                ),
-                                              ),
-                                              TweenAnimationBuilder<double>(
-                                                tween: Tween<double>(begin: 0, end: dailyLimit),
-                                                duration: const Duration(milliseconds: 1000),
-                                                builder: (context, value, child) => Text(
-                                                  "$_userCurrency${currencyFormat.format(value)}",
-                                                  style: text.titleMedium?.copyWith(
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                    separatorBuilder: (context, index) => const SizedBox(width: 12),
+                                    itemCount: sortedCategories.length,
                                   ),
                                 ),
                               ),
                             ),
-                          ),
 
                           // THE EXPENSE LIST
                           if (groupedExpenses.isEmpty)
@@ -521,65 +281,23 @@ class _ExpensePageState extends State<ExpensePage> {
                                     delegate: StickyDateHeaderDelegate(title: entry.key),
                                   ),
                                   SliverPadding(
-                                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
                                     sliver: SliverList(
                                       delegate: SliverChildBuilderDelegate(
                                         childCount: entry.value.length,
                                         (context, index) {
                                           final expense = entry.value[index];
-                                          final anomalyInsights = context
+                                          final isSpikedExpense = context
                                               .read<ExpenseCubit>()
-                                              .getAnomalyInsights(expense);
+                                              .isSpikedExpense(expense, monthlyBudget);
                                           bool isLast = index == entry.value.length - 1;
-                                          final isAnomaly = anomalyInsights != null;
-                                          return Column(
-                                            children: [
-                                              ListTile(
-                                                leading: Text(
-                                                  expense.expenseCategory.displayIcon,
-                                                  style: text.titleMedium,
-                                                ),
-                                                title: Text(
-                                                  expense.title,
-                                                  style: text.titleMedium?.copyWith(
-                                                    fontWeight: FontWeight.normal,
-                                                  ),
-                                                ),
-                                                subtitle: Text(
-                                                  "-$_userCurrency${currencyFormat.format(expense.amount)}",
-                                                  style: text.titleSmall?.copyWith(
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                trailing: isAnomaly
-                                                    ? Icon(
-                                                        Icons.trending_up_rounded,
-                                                        size: 18,
-                                                        color: Colors.red.shade900,
-                                                      )
-                                                    // ? Icon(
-                                                    //     // onPressed: () => _showAnomalyDetails(
-                                                    //     //   anomalyInsights,
-                                                    //     // ), // Pass the list!
-                                                    // icon: Icon(
-                                                    //   Icons.trending_up_rounded,
-                                                    //   color: Colors.red.shade900,
-                                                    //   size: 18,
-                                                    // ),
-                                                    //   )
-                                                    : const SizedBox.shrink(),
-                                              ),
-                                              isLast
-                                                  ? SizedBox.shrink()
-                                                  : Divider(
-                                                      indent: 55,
-                                                      height: 0,
-                                                      thickness: 0.5,
-                                                      color: color.outlineVariant.withValues(
-                                                        alpha: 0.2,
-                                                      ),
-                                                    ),
-                                            ],
+                                          final isAnomaly = isSpikedExpense == true;
+                                          return ExpenseTile(
+                                            expense: expense,
+                                            currencyFormat: currencyFormat,
+                                            userCurrency: _userCurrency,
+                                            isAnomaly: isAnomaly,
+                                            isLast: isLast,
                                           );
                                         },
                                       ),
@@ -587,16 +305,16 @@ class _ExpensePageState extends State<ExpensePage> {
                                   ),
                                 ],
                               );
-                            }).toList(),
+                            }),
                         ],
                       );
                     }
-                    return SizedBox.shrink();
+                    return const SizedBox.shrink();
                   },
                 ),
               ),
 
-              // --- 4. FLOATING INPUT ---
+              // FLOATING INPUT
               _buildFloatingInputField(),
             ],
           ),
@@ -612,7 +330,7 @@ class _ExpensePageState extends State<ExpensePage> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOutQuint,
       margin: isFocused
-          ? const EdgeInsets.only(left: 16, right: 16, bottom: 5)
+          ? const EdgeInsets.only(left: 16, right: 16, bottom: 16)
           : const EdgeInsets.only(left: 50, right: 50, top: 5, bottom: 5),
       decoration: BoxDecoration(
         color: color.secondary,
@@ -629,7 +347,7 @@ class _ExpensePageState extends State<ExpensePage> {
               curve: Curves.easeOutQuint,
               child: isFocused
                   ? SizedBox(height: 55, child: _buildCategoriesList())
-                  : const SizedBox(height: 0),
+                  : const SizedBox.shrink(),
             ),
             _buildExpenseInputField(isFocused),
           ],
@@ -665,7 +383,6 @@ class _ExpensePageState extends State<ExpensePage> {
                 : const SizedBox.shrink(),
           ),
         ),
-
         TextField(
           controller: _inputController,
           focusNode: _inputFocusNode,

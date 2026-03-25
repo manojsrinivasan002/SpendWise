@@ -1,25 +1,13 @@
-import 'package:flutter/material.dart';
-
 class SettingsState {
   final double monthlyBudgetLimit;
-  final String currencySymbol;
-  final ThemeMode themeMode;
+  final bool isDarkMode;
 
-  SettingsState({
-    required this.monthlyBudgetLimit,
-    required this.currencySymbol,
-    required this.themeMode,
-  });
+  SettingsState({required this.monthlyBudgetLimit, required this.isDarkMode});
 
-  SettingsState copyWith({
-    double? monthlyBudgetLimit,
-    String? currencySymbol,
-    ThemeMode? themeMode,
-  }) {
+  SettingsState copyWith({double? monthlyBudgetLimit, bool? isDarkMode}) {
     return SettingsState(
       monthlyBudgetLimit: monthlyBudgetLimit ?? this.monthlyBudgetLimit,
-      currencySymbol: currencySymbol ?? this.currencySymbol,
-      themeMode: themeMode ?? this.themeMode,
+      isDarkMode: isDarkMode ?? this.isDarkMode,
     );
   }
 }

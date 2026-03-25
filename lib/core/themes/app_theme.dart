@@ -33,6 +33,23 @@ class AppTheme {
     ),
   );
 
+  static ThemeData darkMode = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.dark(
+      surface: const Color(0xFF121212), // Premium soft dark background
+      onSurface: Colors.white,
+      inverseSurface: const Color(0xFF2C2C2E), // For subtle highlights/borders
+      primary: Colors.blue.shade400, // Lighter blue for better contrast
+      onPrimary: Colors.black, // Black text on blue buttons looks incredibly sharp
+      secondary: const Color(0xFF1E1E1E), // Elevated card backgrounds (Instagram style)
+      onSecondary: Colors.white,
+      inversePrimary: Colors.grey.shade400, // Muted text and inactive icons
+      error: Colors.red.shade400, // Softer red so it doesn't strain the eyes
+      onError: Colors.black,
+    ),
+  );
+
   //   // global component design
   //   scaffoldBackgroundColor: Colors.grey.shade100,
   //   appBarTheme: AppBarTheme(

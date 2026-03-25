@@ -38,10 +38,6 @@ class ParseChatExpenseUseCase {
 
       String title = titleString.trim();
 
-      // if (title.isEmpty) {
-      //   title = 'Quick Expense';
-      // }
-
       final entity = ExpenseEntity(
         id: Uuid().v4(),
         title: title,

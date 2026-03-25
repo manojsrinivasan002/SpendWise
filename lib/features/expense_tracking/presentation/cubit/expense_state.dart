@@ -67,7 +67,11 @@ class ExpenseLoaded extends ExpenseState {
 
   // TOTAL SPENDINGS
   double get totalSpentThisMonth {
-    return currentMonthExpenses.fold(0.0, (sum, expense) => sum + expense.amount);
+    double sum = 0.0;
+    for (var expense in currentMonthExpenses) {
+      sum = sum + expense.amount;
+    }
+    return sum;
   }
 
   // CALCULATE REMAINING BUDGET
@@ -86,17 +90,13 @@ class ExpenseLoaded extends ExpenseState {
   // HEALTH SCORE ALGORITHM
   int getHealthScore(double monthlyBudget) {
     if (monthlyBudget <= 0) return 0;
-
     DateTime now = DateTime.now();
     int totalDays = DateTime(now.year, now.month + 1, 0).day;
 
     // calculate days passed in a month
     double timeElapsedRatio = now.day / totalDays;
-
     double budgetSpentRatio = totalSpentThisMonth / monthlyBudget;
-
     double difference = budgetSpentRatio / timeElapsedRatio;
-
     int score = 100 - (difference * 100).toInt();
     return score.clamp(0, 100);
   }
@@ -105,13 +105,11 @@ class ExpenseLoaded extends ExpenseState {
   List<MapEntry<String, double>> get sortedCatPercentages {
     if (currentMonthExpenses.isEmpty) return [];
     Map<String, double> categoryTotals = {};
-
     for (var exp in currentMonthExpenses) {
-      String catName = exp.expenseCategory.displayName;
-      categoryTotals[catName] = (categoryTotals[catName] ?? 0) + exp.amount;
+      String catIcon = exp.expenseCategory.displayIcon;
+      categoryTotals[catIcon] = (categoryTotals[catIcon] ?? 0) + exp.amount;
     }
     Map<String, double> percentages = {};
-
     categoryTotals.forEach((cat, total) {
       percentages[cat] = (total / totalSpentThisMonth) * 100;
     });
@@ -124,19 +122,16 @@ class ExpenseLoaded extends ExpenseState {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-
     for (var exp in currentMonthExpenses) {
       final expDate = DateTime(exp.date.year, exp.date.month, exp.date.day);
       String key;
-
       if (expDate == today) {
         key = "Today";
       } else if (expDate == yesterday) {
         key = "Yesterday";
       } else {
-        key = DateFormat('MMMM d, yyyy').format(exp.date);
+        key = DateFormat('MMMM d, yyyy').format(expDate);
       }
-
       if (!groups.containsKey(key)) {
         groups[key] = [];
       }
@@ -146,7 +141,7 @@ class ExpenseLoaded extends ExpenseState {
   }
 
   @override
-  List<Object?> get props => [expenses, globalAvg, categoryAvg, selectedMonth];
+  List<Object?> get props => [expenses, globalAvg, categoryAvg, selectedMonth, earliestExpenseDate];
 }
 
 class ExpenseError extends ExpenseState {

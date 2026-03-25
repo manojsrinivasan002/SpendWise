@@ -7,7 +7,7 @@ import 'package:spend_wise/features/expense_tracking/domain/entities/expense_cat
 import 'package:spend_wise/features/expense_tracking/presentation/cubit/expense_cubit.dart';
 import 'package:spend_wise/features/expense_tracking/presentation/pages/expense_page.dart';
 import 'package:spend_wise/features/settings/presentation/cubit/settings_cubit.dart';
-import 'package:spend_wise/features/settings/presentation/pages/settings_page.dart';
+import 'package:spend_wise/features/settings/presentation/cubit/settings_state.dart';
 import 'core/di/injection_container.dart' as di;
 
 void main() async {
@@ -17,12 +17,20 @@ void main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(ExpenseCategoryAdapter());
   Hive.registerAdapter(ExpenseModelAdapter());
-
+  // await Hive.deleteBoxFromDisk('expensesBox');
   // 2. Initialize Dependency Injection
   await di.initDI();
 
   // 3. Run the App
-  runApp(const MyApp());
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => di.sl<ExpenseCubit>()),
+        BlocProvider(create: (context) => di.sl<SettingsCubit>()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -30,17 +38,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (context) => di.sl<ExpenseCubit>()),
-          BlocProvider(create: (context) => di.sl<SettingsCubit>()),
-        ],
-        child: const ExpensePage(),
-      ),
-      // darkTheme: AppTheme.darkMode,
-      theme: AppTheme.lightMode,
-      themeMode: ThemeMode.system,
+    return BlocBuilder<SettingsCubit, SettingsState>(
+      builder: (context, state) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          theme: AppTheme.lightMode,
+          darkTheme: AppTheme.darkMode,
+          home: const ExpensePage(),
+        );
+      },
     );
   }
 }
