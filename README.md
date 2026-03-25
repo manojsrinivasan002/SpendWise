@@ -1,4 +1,4 @@
-Spend Wise 
+Spend Wiser
 
 Intelligent Expense Tracking with Behavioral Insights
 
